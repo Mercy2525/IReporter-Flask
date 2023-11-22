@@ -1,7 +1,7 @@
 from flask_cors import CORS
 from flask import Flask, jsonify, request, session, make_response
 from flask_restful import Api, Resource, reqparse
-from models import User, RedFlagRecord, db
+from models import User, RedFlagRecord, db, InterventionRecord, Admin
 from flask_migrate import Migrate
 import os
 
@@ -10,7 +10,7 @@ app = Flask(__name__)
 CORS(app,support_credentials=True)
 
 
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URI')
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 api = Api(app)
@@ -28,16 +28,16 @@ class Index(Resource):
 class Signup(Resource):
     def post(self):
         data = request.get_json()
+        full_name = data.get('full_name')
         username = data.get('username')
         password = data.get('password')
         email = data.get('email')
 
-        if username and email and password:
-            new_user = User(username=username, email=email)
+        if full_name and username and email and password:
+            new_user = User(full_name=full_name, username=username, email=email)
             new_user.password_hash = password
             db.session.add(new_user)
             db.session.commit()
-            session['user_id'] = new_user.id
             return new_user.to_dict(), 201
         return {"error": "user details must be added"}, 422
     
@@ -53,6 +53,7 @@ class Login(Resource):
         else:
             return {"error":"username or password is incorrect"},401
 
+
     #  all users route
 class User(Resource):
     def get(self):
@@ -63,57 +64,67 @@ class User(Resource):
     #  all admins route
 class Admin(Resource):
     def get(self):
-        admins = User.query.all()
-        admin_list = [{"id": admin.id, "username": admin.username, "email": admin.email, "full_name": admin.full_name } for admin in admins]
+        admins = Admin.query.all()
+        admin_list = [{"id": admin.id, "full_name": admin.full_name, "username": admin.username} for admin in admins]
         return jsonify(users=admin_list)
     
-
-    # redflag route
-class RedFlag(Resource):
+    
+    # redflag records route
+class RedFlagRecord(Resource):
     def get(self):
         red_flags = RedFlagRecord.query.filter_by(user_id=User.id).all()
-        red_flags_data = [{'id': redflag.id, 'title': redflag.title, 'description': redflag.description,
-                           'author': redflag.author} for redflag in red_flags]
+        red_flags_data = [{'id': redflag.id, 'image': redflag.image, 'video': redflag.video,
+                           'location': redflag.location, 'status': redflag.status, 'created_at': redflag.created_at, 'updated_at': redflag.updated_at} for redflag in red_flags]
         return jsonify({'red_flags': red_flags_data})
    
     def post(self):
         data = request.get_json()
-        title = data.get('title')
-        username = data.get('description')
-        author = data.get(' author')
+        image = data.get('image')
+        video = data.get('video')
+        location = data.get(' location')
+        status = data.get('status')
        
-        if title and username and author:
-            new_redflag = RedFlag(title=title, username=username, author=author)
+        if image and video and location and status:
+            new_redflag = RedFlagRecord(image=image, video=video, location=location, status=status)
             db.session.add(new_redflag)
             db.session.commit()
             session['user_id'] = new_redflag.id
             return new_redflag.to_dict(), 201
         return {"error": "RedFlag details must be added"}, 422
+    
+    # intervention records route
+class InterventionRecord(Resource):
+    def get(self):
+        intervention_flags = InterventionRecord.query.filter_by(user_id=User.id).all()
+        intervention_data = [{'id': intervention.id, 'image': intervention.image, 'video': intervention.video,
+                           'location': intervention.location, 'status': intervention.status, 'created_at': intervention.created_at, 'updated_at': intervention.updated_at} for intervention in intervention_flags]
+        return jsonify({'intervention_flags': intervention_data})
+   
+    def post(self):
+        data = request.get_json()
+        image = data.get('image')
+        video = data.get('video')
+        location = data.get('location')
+        status = data.get('status')
+       
+        if image and video and location:
+            new_intervention = InterventionRecord(image=image, video=video, location=location, status=status)
+            db.session.add(new_intervention)
+            db.session.commit()
+            session['user_id'] = new_intervention.id
+            return new_intervention.to_dict(), 201
+        return {"error": "Intervention details must be added"}, 422
 
 
 
 api.add_resource(Index,'/', endpoint='landing')
-api.add_resource(Signup, '/api/signup')
-api.add_resource(Login, '/api/login')
+api.add_resource(Signup, '/signup')
+api.add_resource(Login, '/login')
 api.add_resource(User, '/users')
-api.add_resource(RedFlag, '/api/redflags')
+api.add_resource(RedFlagRecord, '/redflags')
+api.add_resource(InterventionRecord, '/interventionrecords')
 
 
 if __name__ == '__main__':
     app.run(port=5555, debug=True)
-# app.py
-from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
-from models import db
 
-# Initialize Flask app
-app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///ireporter.db'
-db = SQLAlchemy(app)
-migrate = Migrate(app, db)
-
-# ... Define your models, routes, and other components
-
-if __name__ == "__main__":
-    app.run()

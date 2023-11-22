@@ -10,6 +10,8 @@ db = SQLAlchemy(app)
 
 
 class User(db.Model):
+    __tablename__ = 'users'
+
     id = db.Column(db.Integer, primary_key=True)
     full_name = db.Column(db.String(100))
     email = db.Column(db.String(100), unique=True)
@@ -22,6 +24,8 @@ class User(db.Model):
 
 
 class Admin(db.Model):
+    __tablename__ = 'admins'
+
     id = db.Column(db.Integer, primary_key=True)
     full_name = db.Column(db.String(100))
     username = db.Column(db.String(50), unique=True)
@@ -29,8 +33,10 @@ class Admin(db.Model):
 
 
 class RedFlagRecord(db.Model):
+    __tablename__ = 'redFlagRecords'
+
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     image = db.Column(db.String(100))
     video = db.Column(db.String(100))
     location = db.Column(db.String(100))
@@ -40,8 +46,10 @@ class RedFlagRecord(db.Model):
 
 
 class InterventionRecord(db.Model):
+    __tablename__ = 'interventionRecords'
+
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     image = db.Column(db.String(100))
     video = db.Column(db.String(100))
     location = db.Column(db.String(100))
