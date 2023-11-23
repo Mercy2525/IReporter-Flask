@@ -33,14 +33,14 @@ with app.app_context():
         db.session.add_all(users)
         db.session.commit()
 
-        print('generating users')
+    print('generating users')
 
     red_flags=[]
 
     for i in range(10):
         red_flag=RedFlagRecord(
             image=fake.url(), video=fake.url(),
-            location=fake.text(), status=rc(['Pending','Under Investigation','Resolved']), user=rc(users)
+            location=fake.text(10), status=rc(['Pending','Under Investigation','Resolved']), user=rc(users)
             )
         
         red_flags.append(red_flag)
@@ -54,7 +54,7 @@ with app.app_context():
     for i in range(10):
         intervention=InterventionRecord(
             image=fake.url(), video=fake.url(),
-            location=fake.text(), status=rc(['Pending','Under Investigation','Resolved']), user=rc(users)
+            location=fake.text(10), status=rc(['Pending','Under Investigation','Resolved']), user=rc(users)
             )
         
         interventions.append(intervention)
