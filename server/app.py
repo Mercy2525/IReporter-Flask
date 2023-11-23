@@ -87,8 +87,10 @@ class RedFlagRecordResource(Resource):
        
         if image and video and location and status:
             new_redflag = RedFlagRecord(image=image, video=video, location=location, status=status, user_id=user_id)
+
             db.session.add(new_redflag)
             db.session.commit()
+            
             return make_response(new_redflag.to_dict(), 201) 
         return {"error": "RedFlag details must be added"}, 422
     
