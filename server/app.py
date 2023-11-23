@@ -90,7 +90,7 @@ class RedFlagRecordResource(Resource):
 
             db.session.add(new_redflag)
             db.session.commit()
-            
+
             return make_response(new_redflag.to_dict(), 201) 
         return {"error": "RedFlag details must be added"}, 422
     
@@ -119,7 +119,7 @@ class RedFlagRecordById(Resource):
         return {"error": "Red-flag record not found"}, 404
 
         # delete a red-flag record
-    def delete(self, id):
+    def delete(self,id):
         red_flag=RedFlagRecord.query.filter_by(id=id).first()
 
         if red_flag:
@@ -130,62 +130,68 @@ class RedFlagRecordById(Resource):
             return {"error": "Red-flag record not found"}, 404
         
     
-#     # intervention records route
-# class InterventionRecordResource(Resource):
+    # intervention records route
+class InterventionRecordResource(Resource):
 
-#         # get all intervention records
-#     def get(self):
-#         user_id = session.get('user_id') 
-#         intervention_flags = InterventionRecord.query.filter_by(user_id=user_id).all()
-#         intervention_data = [{'id': intervention.id, 'image': intervention.image, 'video': intervention.video,
-#                               'location': intervention.location, 'status': intervention.status,
-#                               'created_at': intervention.created_at, 'updated_at': intervention.updated_at}
-#                              for intervention in intervention_flags]
-#         return jsonify({'intervention_flags': intervention_data})
+        # get all intervention records
+    def get(self):
+        
+        intervention_flags = [intervention.to_dict() for  intervention in InterventionRecord.query.all()]
+        
+        return make_response(jsonify(intervention_flags),200)
 
-#         # post an intervention record
-#     def post(self):
-#         data = request.get_json()
-#         image = data.get('image')
-#         video = data.get('video')
-#         location = data.get('location')
-#         status = data.get('status')
+        # post an intervention record
+    def post(self):
+        data = request.get_json()
 
-#         if image and video and location:
-#             new_intervention = InterventionRecord(image=image, video=video, location=location, status=status)
-#             db.session.add(new_intervention)
-#             db.session.commit()
-#             session['user_id'] = new_intervention.id
-#             return new_intervention.to_dict(), 201
-#         return {"error": "Intervention details must be added"}, 422
+        image = data.get('image')
+        video = data.get('video')
+        location = data.get('location')
+        status = data.get('status')
+        user_id=data.get('user_id')
+
+        if image and video and location:
+            new_intervention = InterventionRecord(image=image, video=video, location=location, status=status, user_id=user_id)
+
+            db.session.add(new_intervention)
+            db.session.commit()
+      
+            return make_response(jsonify(new_intervention.to_dict(), 201))
+        
+        return {"error": "Intervention details must be added"}, 422
     
-#         # edit an intervention record
-#     def put(self, intervention_id):
-#         data = request.get_json()
-#         intervention = InterventionRecord.query.get(intervention_id)
+class InterventionRecordById(Resource):
+    def get(self,id):
+        record=InterventionRecord.query.filter_by(id=id).first().to_dict()
 
-#         if intervention:
-#             intervention.image = data.get('image', intervention.image)
-#             intervention.video = data.get('video', intervention.video)
-#             intervention.location = data.get('location', intervention.location)
-#             intervention.status = data.get('status', intervention.status)
+        return make_response(jsonify(record),200)
+    
+        # edit an intervention record
+    def patch(self, id):
+        intervention = InterventionRecord.query.filter_by(id=id).first()
 
-#             db.session.commit()
-#             return intervention.to_dict(), 200
-#         else:
-#             return {"error": "Intervention record not found"}, 404
+        if intervention:
+            for attr in request.get_json():
+                setattr(intervention,attr,request.get_json()[attr])
+
+                db.session.add(intervention)
+                db.session.commit()
+            return make_response(jsonify(intervention.to_dict(), 200)) 
+        
+        
+        return {"error": "Intervention record not found"}, 404
 
 
-#         # delete an intervention record
-#     def delete(self, intervention_id):
-#         intervention = InterventionRecord.query.get(intervention_id)
+        # delete an intervention record
+    def delete(self, id):
+        intervention = InterventionRecord.query.filter_by(id=id).first()
 
-#         if intervention:
-#             db.session.delete(intervention)
-#             db.session.commit()
-#             return {"message": "Intervention record deleted successfully"}, 200
-#         else:
-#             return {"error": "Intervention record not found"}, 404
+        if intervention:
+            db.session.delete(intervention)
+            db.session.commit()
+            return {"message": "Intervention record deleted successfully"}, 200
+        else:
+            return {"error": "Intervention record not found"}, 404
 
 
 
@@ -193,15 +199,14 @@ api.add_resource(Index,'/', endpoint='landing')
 api.add_resource(UserResource, '/users', endpoint='users')
 api.add_resource(AdminResource, '/admins', endpoint='admins')
 api.add_resource(RedFlagRecordResource, '/redflags', endpoint='redflags')
-api.add_resource(RedFlagRecordById,'/redflags/<int:id>')
+api.add_resource(RedFlagRecordById,'/redflags/<int:id>', endpoint='redflags_id')
+api.add_resource(InterventionRecordResource, '/intervention', endpoint='intervention')
+api.add_resource(InterventionRecordById, '/intervention/<int:id>', endpoint='interventbyid')
 
 # api.add_resource(SignupResource, '/signup', endpoint='signup')
 # api.add_resource(LoginResource, '/login')
 
 
-# api.add_resource(RedFlagRecordResource, '/redflags/<int:redflags_id>', endpoint='redflags')
-# api.add_resource(InterventionRecordResource, '/interventionrecords')
-# api.add_resource(InterventionRecordResource, '/interventionrecords/<int:intervention_id>', endpoint='interventionrecords')
 
 
 if __name__ == '__main__':
