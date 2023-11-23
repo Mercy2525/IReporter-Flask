@@ -21,7 +21,7 @@ class User(db.Model,SerializerMixin):
     serialize_rules=('-red_flag_records.user','-intervention_records.user',)
 
 
-class Admin(db.Model):
+class Admin(db.Model,SerializerMixin):
     __tablename__ = 'admins'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -39,7 +39,7 @@ class RedFlagRecord(db.Model,SerializerMixin):
     location = db.Column(db.String(100))
     status = db.Column(db.String(20))
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
-    updated_at = db.Column(db.DateTime, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
+    updated_at = db.Column(db.DateTime, onupdate=db.func.current_timestamp())
 
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
 
@@ -55,7 +55,7 @@ class InterventionRecord(db.Model,SerializerMixin):
     location = db.Column(db.String(100))
     status = db.Column(db.String(20))
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
-    updated_at = db.Column(db.DateTime, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
+    updated_at = db.Column(db.DateTime, onupdate=db.func.current_timestamp())
 
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
 
