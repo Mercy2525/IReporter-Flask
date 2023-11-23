@@ -3,7 +3,6 @@ from flask import Flask, jsonify, request, session, make_response
 from flask_restful import Api, Resource, reqparse
 from models import RedFlagRecord, User, db, InterventionRecord, Admin
 from flask_migrate import Migrate
-import os
 
 
 app = Flask(__name__)
@@ -57,12 +56,12 @@ class LoginResource(Resource):
     #  all users route
 class UserResource(Resource):
     def get(self):
-        users = User.query.all()
-        user_list = [{"id": user.id, "username": user.username, "email": user.email, "full_name": user.full_name } for user in users]
-        return jsonify(users=user_list)
+        users = [user.to_dict() for user in User.query.all()]
+
+        return make_response(jsonify(users)) 
 
     #  all admins route
-class Admin(Resource):
+class AdminResource(Resource):
     def get(self):
         admins = Admin.query.all()
         admin_list = [{"id": admin.id, "full_name": admin.full_name, "username": admin.username} for admin in admins]
@@ -72,11 +71,9 @@ class Admin(Resource):
     # redflag records route
 class RedFlagRecordResource(Resource):
     def get(self):
-        user_id = session.get('user_id')
-        red_flags = RedFlagRecord.query.filter_by(user_id=user_id).all()
-        red_flags_data = [{'id': redflag.id, 'image': redflag.image, 'video': redflag.video,
-                           'location': redflag.location, 'status': redflag.status, 'created_at': redflag.created_at, 'updated_at': redflag.updated_at} for redflag in red_flags]
-        return jsonify({'red_flags': red_flags_data})
+        red_flags = [red_flag.to_dict() for red_flag in RedFlagRecord.query.all()]
+        
+        return make_response( jsonify(red_flags),200)
    
         # post redflag records
     def post(self):
@@ -182,12 +179,16 @@ class InterventionRecordResource(Resource):
 
 
 api.add_resource(Index,'/', endpoint='landing')
-api.add_resource(SignupResource, '/signup')
+api.add_resource(SignupResource, '/signup', endpoint='signup')
 api.add_resource(LoginResource, '/login')
+
+
 api.add_resource(UserResource, '/users')
+
+api.add_resource(AdminResource, '/admins')
 api.add_resource(RedFlagRecordResource, '/redflags')
-api.add_resource(InterventionRecordResource, '/interventionrecords')
 api.add_resource(RedFlagRecordResource, '/redflags/<int:redflags_id>', endpoint='redflags')
+api.add_resource(InterventionRecordResource, '/interventionrecords')
 api.add_resource(InterventionRecordResource, '/interventionrecords/<int:intervention_id>', endpoint='interventionrecords')
 
 
