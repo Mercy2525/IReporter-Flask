@@ -1,19 +1,22 @@
-#from flask_cors import CORS
+from flask_cors import CORS
 from flask import Flask, jsonify, request, session, make_response
-from flask_restful import Api, Resource, reqparse
+from flask_restful import Api, Resource
 from models import RedFlagRecord, User, db, InterventionRecord, Admin
 from flask_migrate import Migrate
 
 
 app = Flask(__name__)
-#CORS(app,support_credentials=True)
+CORS(app,support_credentials=True)
 
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.secret_key='&55733gsusvigsdyuijhg'
 db.init_app(app)
 api = Api(app)
 migrate = Migrate(app, db)
+
+
 
     # home route
 class Index(Resource):
@@ -23,36 +26,94 @@ class Index(Resource):
         headers = {}
         return make_response(response_body,status,headers)
     
-    # signup route
-# class SignupResource(Resource):
-#     def post(self):
-#         data = request.get_json()
-#         full_name = data.get('full_name')
-#         username = data.get('username')
-#         password = data.get('password')
-#         email = data.get('email')
+    #signup route
+class SignupUser(Resource):
+    def post(self):
+        data = request.get_json()
+        full_name = data.get('full_name')
+        username = data.get('username')
+        password = data.get('password')
+        email = data.get('email')
 
-#         if full_name and username and email and password:
-#             new_user = User(full_name=full_name, username=username, email=email)
-#             new_user.password_hash = password
-#             db.session.add(new_user)
-#             db.session.commit()
-#             return new_user.to_dict(), 201
-#         return {"error": "user details must be added"}, 422
+        if full_name and username and email and password:
+            new_user = User(full_name=full_name, username=username, email=email)
+            new_user.password_hash = password
+            db.session.add(new_user)
+            db.session.commit()
+
+            session['user_id']=new_user.id
+
+            return new_user.to_dict(), 201
+        return {"error": "user details must be added"}, 422
     
-#     # login route
-# class LoginResource(Resource):
-#     def post(self):
-#         email  = request.get_json().get('email')
-#         password = request.get_json().get("password")
-#         user = User.query.filter(User.email == email).first()
-#         if user and user.authenticate(password):
-#             session['user_id']=user.id
-#             return user.to_dict(),201
-#         else:
-#             return {"error":"username or password is incorrect"},401
+    # login route
+class LoginUser(Resource):
+    def post(self):
+        email  = request.get_json().get('email')
+        password = request.get_json().get("password")
+        user = User.query.filter(User.email == email).first()
+        if user and user.authenticate(password):
+            session['user_id']=user.id
+            return user.to_dict(),201
+        else:
+            return {"error":"username or password is incorrect"},401
+        
+class AddAdmin(Resource):
+    def post(self):
+        data = request.get_json()
+
+        full_name = data.get('full_name')
+        username = data.get('username')
+        password = data.get('password')
+       
+
+        if full_name and username and password:
+            new_admin = Admin(full_name=full_name, username=username)
+            new_admin.password_hash = password
+
+            db.session.add(new_admin)
+            db.session.commit()
+
+            session['admin_id']=new_admin.id
+
+            return make_response(jsonify(new_admin.to_dict()), 201)
+        
+        return {"error": "user details must be added"}, 422
+    
+    # login route
+class LoginAdmin(Resource):
+    def post(self):
+        username  = request.get_json().get('username')
+        password = request.get_json().get("password")
+
+        admin = Admin.query.filter(Admin.username == username).first()
+        if admin and admin.authenticate(password):
+            session['admin_id']=admin.id
+            return make_response(jsonify(admin.to_dict()),201)
+        else:
+            return {"error":"username or password is incorrect"},401
 
 
+class Logout(Resource):
+    def delete(self):
+        if session.get('user_id') or session.get('admin_id'):
+            session['user_id']=None
+            session['admin_id']=None
+            return {"message": "User logged out successfully"}
+        else:
+            return {"error":"User must be logged in to logout"}
+
+
+
+class CheckSession(Resource):
+    def get(self):
+        if session['user_id'] or session['admin_id']:
+            return {"message": "user in session"}
+        else:
+            return {"error": "user not in session:please signin/login"}
+
+
+     
     #  all users route
 class UserResource(Resource):
     def get(self):
@@ -120,7 +181,7 @@ class RedFlagRecordById(Resource):
 
         # delete a red-flag record
     def delete(self,id):
-        red_flag=RedFlagRecord.query.filter_by(id=id).first()
+        red_flag=RedFlagRecord.query.get(id)
 
         if red_flag:
             db.session.delete(red_flag)
@@ -162,7 +223,7 @@ class InterventionRecordResource(Resource):
     
 class InterventionRecordById(Resource):
     def get(self,id):
-        record=InterventionRecord.query.filter_by(id=id).first().to_dict()
+        record=InterventionRecord.query.get(id)
 
         return make_response(jsonify(record),200)
     
@@ -202,9 +263,12 @@ api.add_resource(RedFlagRecordResource, '/redflags', endpoint='redflags')
 api.add_resource(RedFlagRecordById,'/redflags/<int:id>', endpoint='redflags_id')
 api.add_resource(InterventionRecordResource, '/intervention', endpoint='intervention')
 api.add_resource(InterventionRecordById, '/intervention/<int:id>', endpoint='interventbyid')
-
-# api.add_resource(SignupResource, '/signup', endpoint='signup')
-# api.add_resource(LoginResource, '/login')
+api.add_resource(SignupUser, '/signup_user', endpoint='signup')
+api.add_resource(LoginUser, '/login_user', endpoint='login')
+api.add_resource(AddAdmin, '/add_admin', endpoint='add_admin')
+api.add_resource(LoginAdmin, '/login_admin', endpoint='login_admin')
+api.add_resource(Logout, '/logout', endpoint='logout')
+api.add_resource(CheckSession,'/session',endpoint='session' )
 
 
 
