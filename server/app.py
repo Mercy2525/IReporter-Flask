@@ -140,7 +140,7 @@ class InterventionRecordResource(Resource):
         
         return make_response(jsonify(intervention_flags),200)
 
-        # post an intervention record
+        # post an intervention record.
     def post(self):
         data = request.get_json()
 
