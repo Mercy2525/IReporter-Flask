@@ -1,8 +1,11 @@
 from sqlalchemy_serializer import SerializerMixin
 from flask_sqlalchemy import SQLAlchemy
-
+from flask_bcrypt import Bcrypt
+from sqlalchemy.ext.hybrid import hybrid_property
 
 db = SQLAlchemy()
+bcrypt = Bcrypt()
+
 
 
 class User(db.Model,SerializerMixin):
@@ -19,6 +22,23 @@ class User(db.Model,SerializerMixin):
     intervention_records = db.relationship('InterventionRecord', backref='user')
 
     serialize_rules=('-red_flag_records.user','-intervention_records.user',)
+
+    @hybrid_property
+    def password_hash(self):
+        raise AttributeError ("Not allowed")
+    
+
+    @password_hash.setter
+
+    def password_hash (self, password):
+        self._password_hash = bcrypt.generate_password_hash(password).decode("utf-8")
+
+    # def check_password(self, password):
+    #     return bcrypt.check_password_hash(self._password_hash, password)
+        
+    def authenticate(self, password):
+        return bcrypt.check_password_hash(self._password_hash,password.encode("utf-8"))
+    
 
 
 class Admin(db.Model,SerializerMixin):
