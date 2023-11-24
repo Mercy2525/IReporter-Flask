@@ -7,7 +7,6 @@ db = SQLAlchemy()
 bcrypt = Bcrypt()
 
 
-
 class User(db.Model,SerializerMixin):
     __tablename__ = 'users'
 
@@ -15,7 +14,7 @@ class User(db.Model,SerializerMixin):
     full_name = db.Column(db.String(100))
     email = db.Column(db.String(100), unique=True)
     username = db.Column(db.String(50), unique=True)
-    password = db.Column(db.String(100))
+    _password_hash = db.Column(db.String(100))
     
 
     red_flag_records = db.relationship('RedFlagRecord', backref='user')
@@ -29,12 +28,8 @@ class User(db.Model,SerializerMixin):
     
 
     @password_hash.setter
-
     def password_hash (self, password):
         self._password_hash = bcrypt.generate_password_hash(password).decode("utf-8")
-
-    # def check_password(self, password):
-    #     return bcrypt.check_password_hash(self._password_hash, password)
         
     def authenticate(self, password):
         return bcrypt.check_password_hash(self._password_hash,password.encode("utf-8"))
@@ -47,7 +42,20 @@ class Admin(db.Model,SerializerMixin):
     id = db.Column(db.Integer, primary_key=True)
     full_name = db.Column(db.String(100))
     username = db.Column(db.String(50), unique=True)
-    password = db.Column(db.String(100))
+    _password_hash = db.Column(db.String(100))
+
+    @hybrid_property
+    def password_hash(self):
+        raise AttributeError ("Not allowed")
+    
+
+    @password_hash.setter
+    def password_hash (self, password):
+        self._password_hash = bcrypt.generate_password_hash(password).decode("utf-8")
+        
+    def authenticate(self, password):
+        return bcrypt.check_password_hash(self._password_hash,password.encode("utf-8"))
+    
 
 
 class RedFlagRecord(db.Model,SerializerMixin):
