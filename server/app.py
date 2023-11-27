@@ -3,15 +3,17 @@ from flask import Flask, jsonify, request, session, make_response
 from flask_restful import Api, Resource
 from models import RedFlagRecord, User, db, InterventionRecord, Admin
 from flask_migrate import Migrate
+import os
+from dotenv import load_dotenv
 
 
+load_dotenv()
 app = Flask(__name__)
 CORS(app,support_credentials=True)
 
-
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ['DATABASE_URI']
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.secret_key='&55733gsusvigsdyuijhg'
+app.secret_key=os.environ['SECRET_KEY']
 db.init_app(app)
 api = Api(app)
 migrate = Migrate(app, db)
