@@ -4,10 +4,10 @@ from flask_restful import Api, Resource
 from models import RedFlagRecord, User, db, InterventionRecord, Admin
 from flask_migrate import Migrate
 import os
-# from dotenv import load_dotenv
+from dotenv import load_dotenv
 
 
-# load_dotenv()
+load_dotenv()
 app = Flask(__name__)
 CORS(app,support_credentials=True)
 
@@ -225,7 +225,7 @@ class InterventionRecordResource(Resource):
     
 class InterventionRecordById(Resource):
     def get(self,id):
-        record=InterventionRecord.query.get(id)
+        record=InterventionRecord.query.filter_by(id=id).first()
 
         return make_response(jsonify(record),200)
     
