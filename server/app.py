@@ -225,7 +225,8 @@ class InterventionRecordResource(Resource):
     
 class InterventionRecordById(Resource):
     def get(self,id):
-        record=InterventionRecord.query.filter_by(id=id).first()
+        record=InterventionRecord.query.filter_by(id=id).first().to_dict()
+        
 
         return make_response(jsonify(record),200)
     
