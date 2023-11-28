@@ -182,7 +182,7 @@ class InterventionRecordById(Resource):
         return {"error": "Intervention record not found"}, 404
 
 
-        # delete an intervention record
+        # delete an intervention record from the system
     def delete(self, id):
         intervention = InterventionRecord.query.filter_by(id=id).first()
 
