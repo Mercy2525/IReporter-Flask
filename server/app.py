@@ -4,10 +4,11 @@ from flask_restful import Api, Resource
 from models import RedFlagRecord, User, db, InterventionRecord, Admin
 from flask_migrate import Migrate
 import os
+from werkzeug.exceptions import NotFound
 # from dotenv import load_dotenv
 
-
 # load_dotenv()
+
 app = Flask(__name__)
 CORS(app,support_credentials=True)
 
@@ -32,10 +33,12 @@ class Index(Resource):
 class SignupUser(Resource):
     def post(self):
         data = request.get_json()
+
         full_name = data.get('full_name')
         username = data.get('username')
-        password = data.get('password')
         email = data.get('email')
+        password = data.get('password')
+        
 
         if full_name and username and email and password:
             new_user = User(full_name=full_name, username=username, email=email)
@@ -98,21 +101,37 @@ class LoginAdmin(Resource):
 
 class Logout(Resource):
     def delete(self):
-        if session.get('user_id') or session.get('admin_id'):
+        if session.get('user_id'):
             session['user_id']=None
-            session['admin_id']=None
             return {"message": "User logged out successfully"}
         else:
             return {"error":"User must be logged in to logout"}
+        
+class LogoutAdmin(Resource):
+    def delete(self):
+        if session['admin_id']:
+            session['admin_id']=None
+            return {"message": "Admin logged out successfully"}
+        else:
+            return {"error":"Admin must be logged in to logout"}
 
 
 
-class CheckSession(Resource):
+class CheckUser(Resource):
     def get(self):
-        if session['user_id'] or session['admin_id']:
-            return {"message": "user in session"}
+        if session['user_id']:
+            user_signed_in=User.query.filter_by(id=session['user_id']).first()
+            return make_response(jsonify(user_signed_in.to_dict(),200))
         else:
             return {"error": "user not in session:please signin/login"}
+        
+class CheckAdmin(Resource):
+    def get(self):
+        if session['admin_id']:
+            admin_signed_in=Admin.query.filter_by(id=session['admin_id']).first()
+            return make_response(jsonify(admin_signed_in.to_dict()),200)
+        else:
+            return {"error": "Admin not in session:please signin/login"}
 
 
      
@@ -142,6 +161,8 @@ class RedFlagRecordResource(Resource):
     def post(self):
         data = request.get_json()
 
+        title=data.get('title')
+        description=data.get('description')
         image = data.get('image')
         video = data.get('video')
         location = data.get('location')
@@ -149,7 +170,7 @@ class RedFlagRecordResource(Resource):
         user_id=data.get('user_id')
        
         if image and video and location and status:
-            new_redflag = RedFlagRecord(image=image, video=video, location=location, status=status, user_id=user_id)
+            new_redflag = RedFlagRecord( title=title, description= description, image=image, video=video, location=location, status=status, user_id=user_id)
             
             db.session.add(new_redflag)
             db.session.commit()
@@ -207,6 +228,8 @@ class InterventionRecordResource(Resource):
     def post(self):
         data = request.get_json()
 
+        title=data.get('title')
+        description=data.get('description')
         image = data.get('image')
         video = data.get('video')
         location = data.get('location')
@@ -214,7 +237,7 @@ class InterventionRecordResource(Resource):
         user_id=data.get('user_id')
 
         if image and video and location:
-            new_intervention = InterventionRecord(image=image, video=video, location=location, status=status, user_id=user_id)
+            new_intervention = InterventionRecord(title=title, description=description, image=image, video=video, location=location, status=status, user_id=user_id)
 
             db.session.add(new_intervention)
             db.session.commit()
@@ -271,10 +294,18 @@ api.add_resource(LoginUser, '/login_user', endpoint='login')
 api.add_resource(AddAdmin, '/add_admin', endpoint='add_admin')
 api.add_resource(LoginAdmin, '/login_admin', endpoint='login_admin')
 api.add_resource(Logout, '/logout', endpoint='logout')
-api.add_resource(CheckSession,'/session',endpoint='session' )
+api.add_resource(LogoutAdmin, '/logoutA', endpoint='logout_admin')
+api.add_resource(CheckUser,'/session_user',endpoint='session_user' )
+api.add_resource(CheckAdmin,'/session_admin',endpoint='session_admin' )
 
 
-
+@app.errorhandler(NotFound)
+def handle_not_found(e):
+    response = make_response(
+        "Not Found:The requested endpoint(resource) does not exist",
+        404
+        )
+    return response
 
 if __name__ == '__main__':
     app.run(port=5555, debug=True)

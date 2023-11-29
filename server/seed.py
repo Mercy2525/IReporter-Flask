@@ -26,7 +26,7 @@ with app.app_context():
 
     users=[]
 
-    for i in range(10):
+    for i in range(4):
         user=User(full_name=fake.name(), email=fake.email(), username=fake.user_name())
 
         users.append(user)
@@ -37,10 +37,10 @@ with app.app_context():
 
     red_flags=[]
 
-    for i in range(10):
+    for i in range(3):
         red_flag=RedFlagRecord(
-            image=fake.url(), video=fake.url(),
-            location=fake.text(10), status=rc(['Pending','Under Investigation','Resolved']), user=rc(users)
+            image=fake.url(), video=fake.url(), title=fake.text(),
+            description=fake.sentence(),location=fake.text(10), status=rc(['Pending','Under Investigation','Resolved']), user=rc(users)
             )
         
         red_flags.append(red_flag)
@@ -51,8 +51,8 @@ with app.app_context():
 
     interventions=[]
 
-    for i in range(10):
-        intervention=InterventionRecord(
+    for i in range(3):
+        intervention=InterventionRecord(title=fake.text(), description=fake.sentence(),
             image=fake.url(), video=fake.url(),
             location=fake.text(10), status=rc(['Pending','Under Investigation','Resolved']), user=rc(users)
             )

@@ -62,6 +62,8 @@ class RedFlagRecord(db.Model,SerializerMixin):
     __tablename__ = 'redFlagRecords'
 
     id = db.Column(db.Integer, primary_key=True)
+    title=db.Column(db.String)
+    description=db.Column(db.String)
     image = db.Column(db.String(100))
     video = db.Column(db.String(100))
     location = db.Column(db.String(100))
@@ -78,6 +80,8 @@ class InterventionRecord(db.Model,SerializerMixin):
     __tablename__ = 'intervention_records'
 
     id = db.Column(db.Integer, primary_key=True)
+    title=db.Column(db.String)
+    description=db.Column(db.String)
     image = db.Column(db.String(100))
     video = db.Column(db.String(100))
     location = db.Column(db.String(100))
