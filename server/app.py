@@ -5,9 +5,9 @@ from models import RedFlagRecord, User, db, InterventionRecord, Admin
 from flask_migrate import Migrate
 import os
 from werkzeug.exceptions import NotFound
-# from dotenv import load_dotenv
+from dotenv import load_dotenv
 
-# load_dotenv()
+load_dotenv()
 
 app = Flask(__name__)
 CORS(app,support_credentials=True)
@@ -62,6 +62,8 @@ class LoginUser(Resource):
             return user.to_dict(),201
         else:
             return {"error":"username or password is incorrect"},401
+        
+
         
 class AddAdmin(Resource):
     def post(self):
