@@ -170,8 +170,8 @@ class RedFlagRecordResource(Resource):
         user_id=data.get('user_id')
        
         if image and video and location and status:
-            new_redflag = RedFlagRecord(title=title, description=description, image=image, video=video, location=location, status=status, user_id=user_id)
-
+            new_redflag = RedFlagRecord( title=title, description= description, image=image, video=video, location=location, status=status, user_id=user_id)
+            
             db.session.add(new_redflag)
             db.session.commit()
 
@@ -224,7 +224,7 @@ class InterventionRecordResource(Resource):
         
         return make_response(jsonify(intervention_flags),200)
 
-        # post an intervention record
+        # post an intervention record.
     def post(self):
         data = request.get_json()
 
@@ -269,7 +269,7 @@ class InterventionRecordById(Resource):
         return {"error": "Intervention record not found"}, 404
 
 
-        # delete an intervention record
+        # delete an intervention record from the system
     def delete(self, id):
         intervention = InterventionRecord.query.filter_by(id=id).first()
 
