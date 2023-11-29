@@ -161,6 +161,8 @@ class RedFlagRecordResource(Resource):
     def post(self):
         data = request.get_json()
 
+        title=data.get('title')
+        description=data.get('description')
         image = data.get('image')
         video = data.get('video')
         location = data.get('location')
@@ -168,7 +170,7 @@ class RedFlagRecordResource(Resource):
         user_id=data.get('user_id')
        
         if image and video and location and status:
-            new_redflag = RedFlagRecord(image=image, video=video, location=location, status=status, user_id=user_id)
+            new_redflag = RedFlagRecord(title=title, description=description, image=image, video=video, location=location, status=status, user_id=user_id)
 
             db.session.add(new_redflag)
             db.session.commit()
@@ -226,6 +228,8 @@ class InterventionRecordResource(Resource):
     def post(self):
         data = request.get_json()
 
+        title=data.get('title')
+        description=data.get('description')
         image = data.get('image')
         video = data.get('video')
         location = data.get('location')
@@ -233,7 +237,7 @@ class InterventionRecordResource(Resource):
         user_id=data.get('user_id')
 
         if image and video and location:
-            new_intervention = InterventionRecord(image=image, video=video, location=location, status=status, user_id=user_id)
+            new_intervention = InterventionRecord(title=title, description=description, image=image, video=video, location=location, status=status, user_id=user_id)
 
             db.session.add(new_intervention)
             db.session.commit()
