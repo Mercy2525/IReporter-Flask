@@ -63,6 +63,8 @@ class LoginUser(Resource):
         else:
             return {"error":"username or password is incorrect"},401
         
+
+        
 class AddAdmin(Resource):
     def post(self):
         data = request.get_json()
@@ -119,16 +121,19 @@ class LogoutAdmin(Resource):
 
 class CheckUser(Resource):
     def get(self):
-        if session['user_id']:
-            user_signed_in=User.query.filter_by(id=session['user_id']).first()
-            return make_response(jsonify(user_signed_in.to_dict(),200))
+        user = User.query.filter(User.id == session.get('user_id')).first()
+        if user:
+            return jsonify(user.to_dict()),200
         else:
-            return {"error": "user not in session:please signin/login"}
+            return {"error": "user not in session:please signin/login"},401
+        
+   
+            
         
 class CheckAdmin(Resource):
     def get(self):
-        if session['admin_id']:
-            admin_signed_in=Admin.query.filter_by(id=session['admin_id']).first()
+        if session.get('user_id'):
+            admin_signed_in=Admin.query.filter_by(id=session.get('user_id')).first()
             return make_response(jsonify(admin_signed_in.to_dict()),200)
         else:
             return {"error": "Admin not in session:please signin/login"}
@@ -141,6 +146,12 @@ class UserResource(Resource):
         users = [user.to_dict() for user in User.query.all()]
 
         return make_response(jsonify(users),200) 
+    
+# class UserById(Resource):
+#     def get(self,id):
+#         users = User.query.filter_by(id=id).first()
+
+#         return make_response(jsonify(users.to_dict()),200) 
 
     #  all admins route
 class AdminResource(Resource):
@@ -284,6 +295,7 @@ class InterventionRecordById(Resource):
 
 api.add_resource(Index,'/', endpoint='landing')
 api.add_resource(UserResource, '/users', endpoint='users')
+# api.add_resource(UserById,'/user/<int:id>')
 api.add_resource(AdminResource, '/admins', endpoint='admins')
 api.add_resource(RedFlagRecordResource, '/redflags', endpoint='redflags')
 api.add_resource(RedFlagRecordById,'/redflags/<int:id>', endpoint='redflags_id')
