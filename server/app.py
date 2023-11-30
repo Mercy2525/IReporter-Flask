@@ -11,7 +11,7 @@ from werkzeug.exceptions import NotFound
 
 app = Flask(__name__)
 CORS(app,support_credentials=True)
-
+  
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ['DATABASE_URI']
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.secret_key=os.environ['SECRET_KEY']
