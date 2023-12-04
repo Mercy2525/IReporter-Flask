@@ -5,19 +5,27 @@ from models import RedFlagRecord, User, db, InterventionRecord, Admin
 from flask_migrate import Migrate
 import os
 from werkzeug.exceptions import NotFound
-# from dotenv import load_dotenv
+from datetime import timedelta
+from flask_session import Session
+from dotenv import load_dotenv
 
-# load_dotenv()
+load_dotenv()
 
 app = Flask(__name__)
-CORS(app,support_credentials=True)
+CORS(app,support_credentials=True,)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ['DATABASE_URI']
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.secret_key=os.environ['SECRET_KEY']
+
+app.config['SESSION_TYPE'] = 'filesystem'
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=7)
+app.config['SESSION_COOKIE_SAMESITE'] = "Lax"
+app.config['SESSION_FILE_DIR'] = 'session_dir'
 db.init_app(app)
 api = Api(app)
 migrate = Migrate(app, db)
+Session(app)
 
 
 
@@ -47,9 +55,12 @@ class SignupUser(Resource):
             db.session.commit()
 
             session['user_id']=new_user.id
+            session['user_type'] = 'user'
+            # session.permanent = True
 
-            return new_user.to_dict(), 201
-        return {"error": "user details must be added"}, 422
+            # return new_user.to_dict(), 201
+            return make_response(jsonify(new_user.to_dict()),201)
+        return make_response(jsonify({"error": "user details must be added"}),422)
     
     # login route
 class LoginUser(Resource):
@@ -59,10 +70,12 @@ class LoginUser(Resource):
         user = User.query.filter(User.email == email).first()
         if user and user.authenticate(password):
             session['user_id']=user.id
-            return user.to_dict(),201
+            session['user_type'] = 'user'
+            # session.permanent = True
+            return make_response(jsonify(user.to_dict()), 201)
+            
         else:
-            return {"error":"username or password is incorrect"},401
-        
+            return make_response(jsonify({"error": "username or password is incorrect"}), 401)
 
         
 class AddAdmin(Resource):
@@ -82,10 +95,12 @@ class AddAdmin(Resource):
             db.session.commit()
 
             session['admin_id']=new_admin.id
+            session['user_type'] = 'admin'
 
             return make_response(jsonify(new_admin.to_dict()), 201)
         
-        return {"error": "user details must be added"}, 422
+        return make_response(jsonify({"error": "user details must be added"}), 422)
+    
     
     # login route
 class LoginAdmin(Resource):
@@ -96,9 +111,10 @@ class LoginAdmin(Resource):
         admin = Admin.query.filter(Admin.username == username).first()
         if admin and admin.authenticate(password):
             session['admin_id']=admin.id
+            session['user_type'] = 'admin' 
             return make_response(jsonify(admin.to_dict()),201)
         else:
-            return {"error":"username or password is incorrect"},401
+            return make_response(jsonify({"error":"username or password is incorrect"}),401)
 
 
 class Logout(Resource):
@@ -121,22 +137,27 @@ class LogoutAdmin(Resource):
 
 class CheckUser(Resource):
     def get(self):
-        user = User.query.filter(User.id == session.get('user_id')).first()
-        if user:
-            return jsonify(user.to_dict()),200
+        user_type = session.get('user_type')
+        if user_type == 'user':
+            user = User.query.filter(User.id == session.get('user_id')).first()
+            if user:
+                return make_response(jsonify(user.to_dict()), 200)
+            else:
+                return make_response(jsonify({"error": "user not in session: please signin/login"}), 401)
         else:
-            return {"error": "user not in session:please signin/login"},401
+            return {"error": "User not in session: please signin/login as a user"}, 401
         
    
             
         
 class CheckAdmin(Resource):
     def get(self):
-        if session.get('user_id'):
-            admin_signed_in=Admin.query.filter_by(id=session.get('user_id')).first()
-            return make_response(jsonify(admin_signed_in.to_dict()),200)
+        user_type = session.get('user_type')
+        if user_type == 'admin':
+            admin_signed_in = Admin.query.filter_by(id=session.get('admin_id')).first()
+            return make_response(jsonify(admin_signed_in.to_dict()), 200)
         else:
-            return {"error": "Admin not in session:please signin/login"}
+            return make_response(jsonify({"error": "Admin not in session: please signin/login"}), 401)
 
 
      
@@ -147,11 +168,11 @@ class UserResource(Resource):
 
         return make_response(jsonify(users),200) 
     
-# class UserById(Resource):
-#     def get(self,id):
-#         users = User.query.filter_by(id=id).first()
+class UserById(Resource):
+    def get(self,id):
+        users = User.query.filter_by(id=id).first()
 
-#         return make_response(jsonify(users.to_dict()),200) 
+        return make_response(jsonify(users.to_dict()),200) 
 
     #  all admins route
 class AdminResource(Resource):
@@ -187,7 +208,7 @@ class RedFlagRecordResource(Resource):
             db.session.commit()
 
             return make_response(new_redflag.to_dict(), 201) 
-        return {"error": "RedFlag details must be added"}, 422
+        return make_response(jsonify({"error": "RedFlag details must be added"}), 422)
     
 class RedFlagRecordById(Resource):
 
@@ -211,7 +232,7 @@ class RedFlagRecordById(Resource):
             
             return make_response(jsonify(redflag.to_dict(), 200))
         
-        return {"error": "Red-flag record not found"}, 404
+        return make_response(jsonify({"error": "Red-flag record not found"}), 404)
 
         # delete a red-flag record
     def delete(self,id):
@@ -220,9 +241,9 @@ class RedFlagRecordById(Resource):
         if red_flag:
             db.session.delete(red_flag)
             db.session.commit()
-            return {"message": "Red-flag record deleted successfully"}, 200
+            return make_response(jsonify({"message": "Red-flag record deleted successfully"}), 200)
         else:
-            return {"error": "Red-flag record not found"}, 404
+            return make_response(jsonify({"error": "Red-flag record not found"}), 404)
         
     
     # intervention records route
@@ -255,7 +276,7 @@ class InterventionRecordResource(Resource):
       
             return make_response(jsonify(new_intervention.to_dict(), 201))
         
-        return {"error": "Intervention details must be added"}, 422
+        return make_response(jsonify({"error": "Intervention details must be added"}), 422)
     
 class InterventionRecordById(Resource):
     def get(self,id):
@@ -277,8 +298,7 @@ class InterventionRecordById(Resource):
             return make_response(jsonify(intervention.to_dict(), 200)) 
         
         
-        return {"error": "Intervention record not found"}, 404
-
+        return make_response(jsonify({"error": "Intervention record not found"}), 404)
 
         # delete an intervention record from the system
     def delete(self, id):
@@ -287,15 +307,15 @@ class InterventionRecordById(Resource):
         if intervention:
             db.session.delete(intervention)
             db.session.commit()
-            return {"message": "Intervention record deleted successfully"}, 200
+            return make_response(jsonify({"message": "Intervention record deleted successfully"}), 200)
         else:
-            return {"error": "Intervention record not found"}, 404
+            return make_response(jsonify({"error": "Intervention record not found"}), 404)
 
 
 
 api.add_resource(Index,'/', endpoint='landing')
 api.add_resource(UserResource, '/users', endpoint='users')
-# api.add_resource(UserById,'/user/<int:id>')
+api.add_resource(UserById,'/user/<int:id>')
 api.add_resource(AdminResource, '/admins', endpoint='admins')
 api.add_resource(RedFlagRecordResource, '/redflags', endpoint='redflags')
 api.add_resource(RedFlagRecordById,'/redflags/<int:id>', endpoint='redflags_id')
