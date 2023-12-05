@@ -17,16 +17,14 @@ CORS(app,support_credentials=True,)
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ['DATABASE_URI']
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.secret_key=os.environ['SECRET_KEY']
-
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=7)
-app.config['SESSION_COOKIE_SAMESITE'] = "Lax"
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['SESSION_FILE_DIR'] = 'session_dir'
 db.init_app(app)
 api = Api(app)
 migrate = Migrate(app, db)
 Session(app)
-
 
 
     # home route
@@ -51,15 +49,15 @@ class SignupUser(Resource):
         if full_name and username and email and password:
             new_user = User(full_name=full_name, username=username, email=email)
             new_user.password_hash = password
+
             db.session.add(new_user)
             db.session.commit()
 
-            session['user_id']=new_user.id
+            session['user_data']=new_user.to_dict()
             session['user_type'] = 'user'
-            # session.permanent = True
 
-            # return new_user.to_dict(), 201
             return make_response(jsonify(new_user.to_dict()),201)
+        
         return make_response(jsonify({"error": "user details must be added"}),422)
     
     # login route
@@ -67,16 +65,43 @@ class LoginUser(Resource):
     def post(self):
         email  = request.get_json().get('email')
         password = request.get_json().get("password")
-        user = User.query.filter(User.email == email).first()
-        if user and user.authenticate(password):
-            session['user_id']=user.id
-            session['user_type'] = 'user'
-            # session.permanent = True
-            return make_response(jsonify(user.to_dict()), 201)
-            
-        else:
-            return make_response(jsonify({"error": "username or password is incorrect"}), 401)
 
+        user = User.query.filter(User.email == email).first()
+
+        if user:
+            if user.authenticate(password):
+                session['user_data']=user.to_dict()
+                session['user_type'] = 'user'
+
+                return make_response(jsonify(user.to_dict()), 201)
+                
+            else:
+                return make_response(jsonify({"error": "username or password is incorrect"}), 401)
+        print("User not registered.") 
+        return {"error": "User not Registered"}, 404
+            
+class CheckUser(Resource):
+    def get(self):
+        user_type = session.get('user_type')
+        if user_type == 'user':
+            user_data=session.get('user_data')
+            if user_data:
+                return make_response(jsonify(user_data),200)
+            else:
+                return make_response(jsonify({"error": "user not in session: please signin/login"}), 401)
+        
+
+class Logout(Resource):
+    def delete(self):
+        if session.get('user_data'):
+            session['user_data']= None
+            session.pop('user_data')
+            print('user logged out')
+            return {"message": "User logged out successfully"}
+        else:
+            return {"error":"User must be logged in to logout"}
+    
+   
         
 class AddAdmin(Resource):
     def post(self):
@@ -94,7 +119,7 @@ class AddAdmin(Resource):
             db.session.add(new_admin)
             db.session.commit()
 
-            session['admin_id']=new_admin.id
+            session['admin_data']=new_admin.to_dict()
             session['user_type'] = 'admin'
 
             return make_response(jsonify(new_admin.to_dict()), 201)
@@ -102,62 +127,47 @@ class AddAdmin(Resource):
         return make_response(jsonify({"error": "user details must be added"}), 422)
     
     
-    # login route
+#     # login route
 class LoginAdmin(Resource):
     def post(self):
         username  = request.get_json().get('username')
         password = request.get_json().get("password")
 
         admin = Admin.query.filter(Admin.username == username).first()
-        if admin and admin.authenticate(password):
-            session['admin_id']=admin.id
-            session['user_type'] = 'admin' 
-            return make_response(jsonify(admin.to_dict()),201)
-        else:
-            return make_response(jsonify({"error":"username or password is incorrect"}),401)
 
+        if admin:
+            if admin.authenticate(password):
+                session['admin_data']=admin.to_dict()
+                session['user_type'] = 'admin' 
 
-class Logout(Resource):
-    def delete(self):
-        if session.get('user_id'):
-            session['user_id']=None
-            return {"message": "User logged out successfully"}
-        else:
-            return {"error":"User must be logged in to logout"}
-        
-class LogoutAdmin(Resource):
-    def delete(self):
-        if session['admin_id']:
-            session['admin_id']=None
-            return {"message": "Admin logged out successfully"}
-        else:
-            return {"error":"Admin must be logged in to logout"}
-
-
-
-class CheckUser(Resource):
-    def get(self):
-        user_type = session.get('user_type')
-        if user_type == 'user':
-            user = User.query.filter(User.id == session.get('user_id')).first()
-            if user:
-                return make_response(jsonify(user.to_dict()), 200)
+                return make_response(jsonify(admin.to_dict()),201)
             else:
-                return make_response(jsonify({"error": "user not in session: please signin/login"}), 401)
-        else:
-            return {"error": "User not in session: please signin/login as a user"}, 401
-        
-   
-            
-        
+                return make_response(jsonify({"error":"username or password is incorrect"}),401)
+        print("User not registered.") 
+        return {"error": "User not Registered"}, 404
+
+
 class CheckAdmin(Resource):
     def get(self):
         user_type = session.get('user_type')
         if user_type == 'admin':
-            admin_signed_in = Admin.query.filter_by(id=session.get('admin_id')).first()
-            return make_response(jsonify(admin_signed_in.to_dict()), 200)
+            admin_data=session.get('admin_data')
+            if admin_data:
+                return make_response(jsonify(admin_data), 200)
+            else:
+                return make_response(jsonify({"error": "Admin not in session: please signin/login"}), 401)
+
+        
+class LogoutAdmin(Resource):
+    def delete(self):
+        if session.get('admin_data'):
+            session['admin_data']=None
+            session.pop('admin_data')
+            print('admin logged out')
+            return {"message": "Admin logged out successfully"}
         else:
-            return make_response(jsonify({"error": "Admin not in session: please signin/login"}), 401)
+            return {"error":"Admin must be logged in to logout"}
+
 
 
      
@@ -201,7 +211,7 @@ class RedFlagRecordResource(Resource):
         status = data.get('status')
         user_id=data.get('user_id')
        
-        if image and video and location and status:
+        if image and location and status:
             new_redflag = RedFlagRecord( title=title, description= description, image=image, video=video, location=location, status=status, user_id=user_id)
             
             db.session.add(new_redflag)
@@ -268,7 +278,7 @@ class InterventionRecordResource(Resource):
         status = data.get('status')
         user_id=data.get('user_id')
 
-        if image and video and location:
+        if image and location:
             new_intervention = InterventionRecord(title=title, description=description, image=image, video=video, location=location, status=status, user_id=user_id)
 
             db.session.add(new_intervention)
@@ -323,12 +333,14 @@ api.add_resource(InterventionRecordResource, '/intervention', endpoint='interven
 api.add_resource(InterventionRecordById, '/intervention/<int:id>', endpoint='interventbyid')
 api.add_resource(SignupUser, '/signup_user', endpoint='signup')
 api.add_resource(LoginUser, '/login_user', endpoint='login')
+api.add_resource(CheckUser,'/session_user',endpoint='session_user' )
+api.add_resource(Logout, '/logout', endpoint='logout')
 api.add_resource(AddAdmin, '/add_admin', endpoint='add_admin')
 api.add_resource(LoginAdmin, '/login_admin', endpoint='login_admin')
-api.add_resource(Logout, '/logout', endpoint='logout')
+api.add_resource(CheckAdmin,'/session_admin',endpoint='session_admin')
 api.add_resource(LogoutAdmin, '/logoutA', endpoint='logout_admin')
-api.add_resource(CheckUser,'/session_user',endpoint='session_user' )
-api.add_resource(CheckAdmin,'/session_admin',endpoint='session_admin' )
+
+
 
 
 @app.errorhandler(NotFound)
