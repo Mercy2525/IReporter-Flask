@@ -27,7 +27,7 @@ migrate = Migrate(app, db)
 Session(app)
 
 
-    # home route
+    #home route
 class Index(Resource):
     def get(self):
         response_body = '<h1>Hello World</h1>'
