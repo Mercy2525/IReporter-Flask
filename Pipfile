@@ -14,6 +14,8 @@ flask-restful = "*"
 flask-bcrypt = "*"
 gunicorn = "*"
 psycopg2-binary = "*"
+redis = "*"
+flask-session = "*"
 
 [dev-packages]
 
