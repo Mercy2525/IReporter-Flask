@@ -97,9 +97,9 @@ class Logout(Resource):
             session['user_id']= None
             session.pop('user_id')
             print('user logged out')
-            return {"message": "User logged out successfully"}
+            return {"message": "User logged out successfully"}, 200
         else:
-            return {"error":"User must be logged in to logout"}
+            return {"error":"User must be logged in to logout"},401
     
    
         
@@ -164,9 +164,9 @@ class LogoutAdmin(Resource):
             session['admin_id']=None
             session.pop('admin_id')
             print('admin logged out')
-            return {"message": "Admin logged out successfully"}
+            return {"message": "Admin logged out successfully"},200
         else:
-            return {"error":"Admin must be logged in to logout"}
+            return {"error":"Admin must be logged in to logout"},401
 
 
 
@@ -196,8 +196,12 @@ class AdminResource(Resource):
 class RedFlagRecordResource(Resource):
     def get(self):
         red_flags = [red_flag.to_dict() for red_flag in RedFlagRecord.query.all()]
-        
-        return make_response(jsonify(red_flags),200)
+
+        if red_flags:
+            return make_response(jsonify(red_flags),200)
+        else:
+            return make_response(jsonify({"error": "There are no Red-flag records"}), 404)
+
    
         # post redflag records
     def post(self):
@@ -211,7 +215,7 @@ class RedFlagRecordResource(Resource):
         status = data.get('status')
         user_id=data.get('user_id')
        
-        if location and status:
+        if title and description and image and location and status:
             new_redflag = RedFlagRecord( title=title, description= description, image=image, video=video, location=location, status=status, user_id=user_id)
             
             db.session.add(new_redflag)
@@ -227,7 +231,10 @@ class RedFlagRecordById(Resource):
         pass
         red_flag=RedFlagRecord.query.filter_by(id=id).first().to_dict()
 
-        return make_response(jsonify(red_flag),200)
+        if red_flag:
+            return make_response(jsonify(red_flag),200)
+        
+        return make_response(jsonify({"error": "Red-flag record not found"}), 404)
     
         # edit a red-flag record    
     def patch(self,id):
@@ -263,8 +270,10 @@ class InterventionRecordResource(Resource):
     def get(self):
         
         intervention_flags = [intervention.to_dict() for  intervention in InterventionRecord.query.all()]
-        
-        return make_response(jsonify(intervention_flags),200)
+        if intervention_flags:
+            return make_response(jsonify(intervention_flags),200)
+        else:
+             return make_response(jsonify({"error": "There are no intervention records"}), 404)
 
         # post an intervention record.
     def post(self):
@@ -278,7 +287,7 @@ class InterventionRecordResource(Resource):
         status = data.get('status')
         user_id=data.get('user_id')
 
-        if status and location:
+        if title and description and image and status and location:
             new_intervention = InterventionRecord(title=title, description=description, image=image, video=video, location=location, status=status, user_id=user_id)
 
             db.session.add(new_intervention)
@@ -286,14 +295,16 @@ class InterventionRecordResource(Resource):
       
             return make_response(jsonify(new_intervention.to_dict(), 200))
         
-        # return make_response(jsonify({"error": "Intervention details must be added"}), 422)
+        return make_response(jsonify({"error": "Intervention details must be added"}), 422)
     
 class InterventionRecordById(Resource):
     def get(self,id):
         record=InterventionRecord.query.filter_by(id=id).first().to_dict()
-        
 
-        return make_response(jsonify(record),200)
+        if record:
+            return make_response(jsonify(record),200)
+        
+        return make_response(jsonify({"error": "Intervention record not found"}), 404)
     
         # edit an intervention record
     def patch(self, id):
