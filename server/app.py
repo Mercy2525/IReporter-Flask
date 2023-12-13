@@ -7,6 +7,7 @@ import os
 from werkzeug.exceptions import NotFound
 from datetime import timedelta
 from flask_session import Session
+
 # from dotenv import load_dotenv
 
 # load_dotenv()
@@ -21,6 +22,7 @@ app.config['SESSION_TYPE'] = 'filesystem'
 app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=7)
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['SESSION_FILE_DIR'] = 'session_dir'
+app.config['JSONIFY_PRETTYPRINT_REGULAR']= True
 db.init_app(app)
 api = Api(app)
 migrate = Migrate(app, db)
@@ -33,7 +35,7 @@ class Index(Resource):
         response_body = '<h1>Hello World</h1>'
         status = 200
         headers = {}
-        return make_response(response_body,status,headers)
+        return make_response(jsonify(response_body),status,headers)
     
     #signup route
 class SignupUser(Resource):
@@ -78,7 +80,7 @@ class LoginUser(Resource):
             else:
                 return make_response(jsonify({"error": "username or password is incorrect"}), 401)
         print("User not registered.") 
-        return {"error": "User not Registered"}, 404
+        return make_response(jsonify({"error": "User not Registered"}), 404)
             
 class CheckUser(Resource):
     def get(self):
@@ -97,9 +99,9 @@ class Logout(Resource):
             session['user_id']= None
             session.pop('user_id')
             print('user logged out')
-            return {"message": "User logged out successfully"}, 200
+            return make_response(jsonify({"message": "User logged out successfully"}), 200)
         else:
-            return {"error":"User must be logged in to logout"},401
+            return make_response(jsonify({"error":"User must be logged in to logout"}),401)
     
    
         
@@ -144,7 +146,7 @@ class LoginAdmin(Resource):
             else:
                 return make_response(jsonify({"error":"username or password is incorrect"}),401)
         print("User not registered.") 
-        return {"error": "User not Registered"}, 404
+        return make_response(jsonify({"error": "User not Registered"}), 404)
 
 
 class CheckAdmin(Resource):
@@ -164,9 +166,9 @@ class LogoutAdmin(Resource):
             session['admin_id']=None
             session.pop('admin_id')
             print('admin logged out')
-            return {"message": "Admin logged out successfully"},200
+            return make_response(jsonify({"message": "Admin logged out successfully"}),200)
         else:
-            return {"error":"Admin must be logged in to logout"},401
+            return make_response(jsonify({"error":"Admin must be logged in to logout"}),401)
 
 
 
