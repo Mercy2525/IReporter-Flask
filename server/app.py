@@ -19,11 +19,11 @@ CORS(app,support_credentials=True,)
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ['DATABASE_URI']
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.secret_key=os.environ['SECRET_KEY']
-# app.config['SESSION_TYPE'] = 'filesystem'
-# app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=7)
-# app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-# app.config['SESSION_FILE_DIR'] = 'session_dir'
-# app.config['JSONIFY_PRETTYPRINT_REGULAR']= True
+app.config['SESSION_TYPE'] = 'filesystem'
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=7)
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['SESSION_FILE_DIR'] = 'session_dir'
+app.config['JSONIFY_PRETTYPRINT_REGULAR']= True
 
 app.config['MAIL_SERVER']='smtp.elasticemail.com'
 app.config['MAIL_PORT'] = 2525
@@ -80,7 +80,9 @@ class Index(Resource):
         response_body = {"message": "Hello World"}
         status = 200
         headers = {}
-        return make_response(jsonify(response_body), status, headers)
+        response= make_response(jsonify(response_body), status, headers)
+        response.content_type= 'application/json'
+        return response
 
     
     #signup route
@@ -88,10 +90,10 @@ class SignupUser(Resource):
     def post(self):
         data = request.get_json()
 
-        full_name = data.get('full_name')
-        username = data.get('username')
-        email = data.get('email')
-        password = data.get('password')
+        full_name = data['full_name']
+        username = data['username']
+        email = data['email']
+        password = data['password']
         
 
         if full_name and username and email and password:
@@ -108,7 +110,9 @@ class SignupUser(Resource):
             email_on_signup(email)
 
 
-            return make_response(jsonify(new_user.to_dict()),201)
+            response= make_response(jsonify(new_user.to_dict()),201)
+            response.content_type='application/json'
+            return response
         
         return make_response(jsonify({"error": "user details must be added"}),422)
     
@@ -138,7 +142,10 @@ class CheckUser(Resource):
         if user_type == 'user':
             user = User.query.filter(User.id == session.get('user_id')).first()
             if user:
-                return make_response(jsonify(user.to_dict()),200)
+                response= make_response(jsonify(user.to_dict()),200)
+                response.content_type='application/json'
+                return response
+        
             else:
                 return make_response(jsonify({"error": "user not in session: please signin/login"}), 401)
         
@@ -205,7 +212,9 @@ class CheckAdmin(Resource):
         if user_type == 'admin':
             admin = Admin.query.filter(Admin.id == session.get('admin_id')).first()
             if admin:
-                return make_response(jsonify(admin.to_dict()), 200)
+                response= make_response(jsonify(admin.to_dict()), 200)
+                response.content_type='application/json'
+                return response
             else:
                 return make_response(jsonify({"error": "Admin not in session: please signin/login"}), 401)
 
@@ -392,6 +401,15 @@ class InterventionRecordById(Resource):
             return make_response(jsonify({"message": "Intervention record deleted successfully"}), 200)
         else:
             return make_response(jsonify({"error": "Intervention record not found"}), 404)
+        
+@app.errorhandler(NotFound)
+def handle_not_found(e):
+    response = make_response(
+        jsonify({"error": "Not Found: The requested endpoint (resource) does not exist"}),
+        404
+    )
+    return response
+
 
 
 
@@ -413,15 +431,6 @@ api.add_resource(CheckAdmin,'/session_admin',endpoint='session_admin')
 api.add_resource(LogoutAdmin, '/logoutA', endpoint='logout_admin')
 
 
-
-
-@app.errorhandler(NotFound)
-def handle_not_found(e):
-    response = make_response(
-        jsonify({"error": "Not Found: The requested endpoint (resource) does not exist"}),
-        404
-    )
-    return response
 
 
 if __name__ == '__main__':
