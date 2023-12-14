@@ -16,6 +16,7 @@ gunicorn = "*"
 psycopg2-binary = "*"
 redis = "*"
 flask-session = "*"
+flask-mail = "*"
 
 [dev-packages]
 
