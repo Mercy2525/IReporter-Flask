@@ -74,6 +74,7 @@ def email_on_status_change(user_email,title,status):
    
 
     #home route
+    #
 class Index(Resource):
     def get(self):
         response_body = {"message": "Hello World"}
