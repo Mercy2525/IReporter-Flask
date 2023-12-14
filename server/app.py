@@ -19,11 +19,11 @@ CORS(app,support_credentials=True,)
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ['DATABASE_URI']
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.secret_key=os.environ['SECRET_KEY']
-app.config['SESSION_TYPE'] = 'filesystem'
-app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=7)
-app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-app.config['SESSION_FILE_DIR'] = 'session_dir'
-app.config['JSONIFY_PRETTYPRINT_REGULAR']= True
+# app.config['SESSION_TYPE'] = 'filesystem'
+# app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=7)
+# app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+# app.config['SESSION_FILE_DIR'] = 'session_dir'
+# app.config['JSONIFY_PRETTYPRINT_REGULAR']= True
 
 app.config['MAIL_SERVER']='smtp.elasticemail.com'
 app.config['MAIL_PORT'] = 2525
