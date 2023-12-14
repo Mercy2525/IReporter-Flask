@@ -7,10 +7,11 @@ import os
 from werkzeug.exceptions import NotFound
 from datetime import timedelta
 from flask_session import Session
+from flask_mail import Mail,Message
 
-# from dotenv import load_dotenv
+from dotenv import load_dotenv
 
-# load_dotenv()
+load_dotenv()
 
 app = Flask(__name__)
 CORS(app,support_credentials=True,)
@@ -23,19 +24,63 @@ app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=7)
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['SESSION_FILE_DIR'] = 'session_dir'
 app.config['JSONIFY_PRETTYPRINT_REGULAR']= True
+
+app.config['MAIL_SERVER']='smtp.elasticemail.com'
+app.config['MAIL_PORT'] = 2525
+app.config['MAIL_USERNAME'] = 'mercywmuriithi.mm@gmail.com'
+app.config['MAIL_PASSWORD'] = '035DD7B03036F704AE4605DDFF792CE01787'
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USE_SSL'] = False
+
+
 db.init_app(app)
 api = Api(app)
 migrate = Migrate(app, db)
 Session(app)
+mail=Mail(app)
 
+
+
+def email_on_signup(user_email):
+    message= Message(
+        subject='Welcome to IReporter :)',
+        recipients=[user_email],
+        sender='mercywmuriithi.mm@gmail.com'
+    )
+    message.body= "Hello Citizen X, \n\n Welcome to IReporter,let's make our country corruption free \n\n Thank you"
+    print(message.body)
+
+    mail.send(message)
+
+def email_on_status_change(user_email,title,status):
+    message= Message(
+        subject='Status Update',
+        recipients=[user_email],
+        sender='mercywmuriithi.mm@gmail.com'
+    )
+
+
+    if status == 'resolved':
+        message.body= f"Hello Citizen X, \n\n We are happy to notify that your report, {title}, has been {status}. You are our valuable contributor, let's fix this country one report at a time \n\n Thank you for your bold contibution."
+    elif status == 'rejected':
+        message.body= f"Hello Citizen X, \n\n The report, {title}, has been {status}. We have reason to believe the information you have provided is inaccurate and has no concrete proof \n\n Thank you for your bold contibution."
+    elif status == 'under investigation':
+        message.body= f"Hello Citizen X, \n\n Your report, {title}, is {status}. We have found your claims concrete and we proceed to look into it,we'll keep you posted. \n\n Thank you for your bold contibution."
+
+    print(message.body)
+    print('email works')
+
+    mail.send(message)
+   
 
     #home route
 class Index(Resource):
     def get(self):
-        response_body = '<h1>Hello World</h1>'
+        response_body = {"message": "Hello World"}
         status = 200
         headers = {}
-        return make_response(jsonify(response_body),status,headers)
+        return make_response(jsonify(response_body), status, headers)
+
     
     #signup route
 class SignupUser(Resource):
@@ -55,8 +100,12 @@ class SignupUser(Resource):
             db.session.add(new_user)
             db.session.commit()
 
+
             session['user_id']=new_user.id
             session['user_type'] = 'user'
+
+            email_on_signup(email)
+
 
             return make_response(jsonify(new_user.to_dict()),201)
         
@@ -79,7 +128,7 @@ class LoginUser(Resource):
                 
             else:
                 return make_response(jsonify({"error": "username or password is incorrect"}), 401)
-        print("User not registered.") 
+       
         return make_response(jsonify({"error": "User not Registered"}), 404)
             
 class CheckUser(Resource):
@@ -217,7 +266,7 @@ class RedFlagRecordResource(Resource):
         status = data.get('status')
         user_id=data.get('user_id')
        
-        if title and description and image and location and status:
+        if title and description and location and status:
             new_redflag = RedFlagRecord( title=title, description= description, image=image, video=video, location=location, status=status, user_id=user_id)
             
             db.session.add(new_redflag)
@@ -241,6 +290,7 @@ class RedFlagRecordById(Resource):
         # edit a red-flag record    
     def patch(self,id):
         redflag = RedFlagRecord.query.filter_by(id=id).first()
+        data = request.get_json()
 
         if redflag:
             for attr in request.get_json():
@@ -248,8 +298,12 @@ class RedFlagRecordById(Resource):
 
             db.session.add(redflag)
             db.session.commit()
+
+            user = User.query.get(redflag.user_id)
+            if user:
+                email_on_status_change(user.email,redflag.title,redflag.status)
             
-            return make_response(jsonify(redflag.to_dict(), 200))
+            return make_response(jsonify(redflag.to_dict()), 200)
         
         return make_response(jsonify({"error": "Red-flag record not found"}), 404)
 
@@ -289,7 +343,7 @@ class InterventionRecordResource(Resource):
         status = data.get('status')
         user_id=data.get('user_id')
 
-        if title and description and image and status and location:
+        if title and description and status and location:
             new_intervention = InterventionRecord(title=title, description=description, image=image, video=video, location=location, status=status, user_id=user_id)
 
             db.session.add(new_intervention)
@@ -318,6 +372,10 @@ class InterventionRecordById(Resource):
 
                 db.session.add(intervention)
                 db.session.commit()
+
+                user = User.query.get(intervention.user_id)
+                if user:
+                    email_on_status_change(user.email,intervention.title,intervention.status)
             return make_response(jsonify(intervention.to_dict(), 200)) 
         
         
@@ -359,10 +417,11 @@ api.add_resource(LogoutAdmin, '/logoutA', endpoint='logout_admin')
 @app.errorhandler(NotFound)
 def handle_not_found(e):
     response = make_response(
-        "Not Found:The requested endpoint(resource) does not exist",
+        jsonify({"error": "Not Found: The requested endpoint (resource) does not exist"}),
         404
-        )
+    )
     return response
+
 
 if __name__ == '__main__':
     app.run(port=5555, debug=True)
